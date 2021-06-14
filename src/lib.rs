@@ -56,6 +56,51 @@ mod tests {
         let conf = Config::new(&args).unwrap();
         run(conf).unwrap();
     }
+
+    #[test]
+    fn search_returns_line_which_contains_query() {
+        let query = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+        assert_eq!(vec!["safe, fast, productive."], search(query, contents));
+    }
+
+    #[test]
+    fn search_returns_line_which_contains_query_unicode() {
+        let query = "Привет, мир! ⛵";
+        let contents = "\
+Это мой текст.
+Hello, world! Привет, мир! ⛵⛵⛵";
+        assert_eq!(vec!["Hello, world! Привет, мир! ⛵⛵⛵"], search(query, contents));
+    }
+
+    #[test]
+    fn search_returns_several_lines_which_contain_query() {
+        let query = "Hello";
+        let contents = "\
+Hi, people!
+Hello, world!
+Hello, country!
+I'm Artem.";
+        assert_eq!(
+            vec!["Hello, world!", "Hello, country!"],
+            search(query, contents)
+        );
+    }
+}
+
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results = Vec::new();
+
+    for line in contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    results
 }
 
 pub struct Config {
@@ -77,6 +122,10 @@ impl Config {
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.filename)?;
-    println!("With text: {}", contents);
+
+    for line in search(&config.query, &contents) {
+        println!("{}", line);
+    }
+
     Ok(())
 }
